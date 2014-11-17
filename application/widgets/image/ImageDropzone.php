@@ -4,6 +4,7 @@ namespace app\widgets\image;
 
 use app\models\Image;
 use app\widgets\dropzone\DropZone;
+use vova07\imperavi\helpers\FileHelper;
 use WideImage\WideImage;
 use Yii;
 use yii\helpers\ArrayHelper;
@@ -19,70 +20,6 @@ class ImageDropzone extends DropZone
     public $modelId;
 
     public $uploadDir = 'upload';
-
-    public static function saveThumbnail($dir, $filename)
-    {
-        if (trim($filename) && file_exists(Yii::getAlias($dir . '/' . $filename))) {
-            $image = WideImage::load(Yii::getAlias($dir . '/' . $filename));
-            if ($image->getWidth() > $image->getHeight()) {
-                $image->resize(null, 80)
-                    ->crop('center', 'center', 80, 80)
-                    ->saveToFile($dir . '/small-' . $filename);
-            } else {
-                $image->resize(80)
-                    ->crop('center', 'center', 80, 80)
-                    ->saveToFile($dir . '/small-' . $filename);
-            }
-
-            return 'small-' . $filename;
-        }
-
-        return '';
-    }
-
-    protected function addFiles($files = [])
-    {
-        $path = Yii::getAlias('@webroot' . $this->uploadDir . '/');
-
-        $i = 0;
-        foreach ($files as $file) {
-            $fhName = 'file_' . $i++;
-
-            // Create the mock file:
-            $this->getView()->registerJs(
-                'var '
-                . $fhName
-                . ' = { name: "'
-                . $file['name']
-                . '", size: '
-                . (file_exists($path . $file['name']) ? filesize($path . $file['name']) : 0)
-                . ' };'
-            );
-            // Call the default addedfile event handler
-            $this->getView()->registerJs(
-                $this->dropzoneName . '.emit("addedfile", ' . $fhName . ');'
-            );
-            // And optionally show the thumbnail of the file:
-            $this->getView()->registerJs(
-                $this->dropzoneName . '.emit("thumbnail", ' . $fhName . ', "' . $file['thumbnail'] . '");'
-            );
-            $this->getView()->registerJs(
-                'jQuery(' . $fhName . '.previewElement).find("[name=\"id[]\"]").val(' . $file['id'] . ');
-                jQuery(' . $fhName . '.previewElement).data("filename", "' . $file['name'] . '");
-                jQuery(' . $fhName . '.previewElement).find(".description textarea").text("'
-                . $file['description'] . '");
-                jQuery(' . $fhName . '.previewElement).find(".description textarea").attr("name", "description['
-                . $file['id'] . ']")'
-            );
-        }
-    }
-
-    protected function createDropzone()
-    {
-        $this->getView()->registerJs(
-            'var ' . $this->dropzoneName . ' = new Dropzone("#' . $this->id . '", ' . Json::encode($this->options) . ');'
-        );
-    }
 
     public function run()
     {
@@ -197,5 +134,73 @@ class ImageDropzone extends DropZone
                 jQuery(file.previewElement).removeClass("dz-processing");
             }',
         ];
+    }
+
+    public static function saveThumbnail($dir, $filename)
+    {
+        if (trim($filename) && file_exists(Yii::getAlias($dir . '/' . $filename))) {
+            $image = WideImage::load(Yii::getAlias($dir . '/' . $filename));
+            if ($image->getWidth() > $image->getHeight()) {
+                $image->resize(null, 80)
+                    ->crop('center', 'center', 80, 80)
+                    ->saveToFile($dir . '/small-' . $filename);
+            } else {
+                $image->resize(80)
+                    ->crop('center', 'center', 80, 80)
+                    ->saveToFile($dir . '/small-' . $filename);
+            }
+
+            return 'small-' . $filename;
+        }
+
+        return '';
+    }
+
+    protected function addFiles($files = [])
+    {
+        $path = Yii::getAlias('@webroot' . $this->uploadDir . '/');
+
+        if (!is_dir($path))
+            FileHelper::createDirectory($path);
+
+
+        $i = 0;
+        foreach ($files as $file) {
+            $fhName = 'file_' . $i++;
+
+            // Create the mock file:
+            $this->getView()->registerJs(
+                'var '
+                . $fhName
+                . ' = { name: "'
+                . $file['name']
+                . '", size: '
+                . (file_exists($path . $file['name']) ? filesize($path . $file['name']) : 0)
+                . ' };'
+            );
+            // Call the default addedfile event handler
+            $this->getView()->registerJs(
+                $this->dropzoneName . '.emit("addedfile", ' . $fhName . ');'
+            );
+            // And optionally show the thumbnail of the file:
+            $this->getView()->registerJs(
+                $this->dropzoneName . '.emit("thumbnail", ' . $fhName . ', "' . $file['thumbnail'] . '");'
+            );
+            $this->getView()->registerJs(
+                'jQuery(' . $fhName . '.previewElement).find("[name=\"id[]\"]").val(' . $file['id'] . ');
+                jQuery(' . $fhName . '.previewElement).data("filename", "' . $file['name'] . '");
+                jQuery(' . $fhName . '.previewElement).find(".description textarea").text("'
+                . $file['description'] . '");
+                jQuery(' . $fhName . '.previewElement).find(".description textarea").attr("name", "description['
+                . $file['id'] . ']")'
+            );
+        }
+    }
+
+    protected function createDropzone()
+    {
+        $this->getView()->registerJs(
+            'var ' . $this->dropzoneName . ' = new Dropzone("#' . $this->id . '", ' . Json::encode($this->options) . ');'
+        );
     }
 }
