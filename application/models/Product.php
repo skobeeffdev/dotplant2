@@ -406,15 +406,14 @@ class Product extends ActiveRecord implements ImportableInterface, ExportableInt
             $this->main_category_id = $categories[0];
         }
 
+        if (empty($this->name)) {
+            $this->name = 'unnamed-product-' . time();
+        }
 
         if (empty($this->slug)) {
             $this->slug = Helper::createSlug($this->name);
         } elseif (mb_strlen($this->slug) > 80) {
             $this->slug = mb_substr($this->slug, 0, 80);
-        }
-
-        if (empty($this->name)) {
-            $this->name = 'unnamed-product';
         }
 
         if (!is_numeric($this->price)) {
