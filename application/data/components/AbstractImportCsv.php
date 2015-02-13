@@ -37,18 +37,31 @@ abstract class AbstractImportCsv extends Import
                     }
                     $objData = [];
                     $propData = [];
+                    $uncheckedFields = $row;
                     foreach ($objAttributes as $attribute) {
                         if (isset($titleFields[$attribute])) {
                             $objData[$attribute] = $row[$titleFields[$attribute]];
+                            unset($uncheckedFields[$titleFields[$attribute]]);
                         }
                     }
+
+                    $normTitleArray = array_flip($titleFields);
+                    $deprecatedFields = ['internal_id', 'categories', 'images'];
+                    $unchecked = [];
+                    foreach ($uncheckedFields as $key => $value) {
+                        if (false === array_search($normTitleArray[$key], $deprecatedFields)) {
+                            $unchecked[$normTitleArray[$key]] = $value;
+                        }
+                    }
+
                     foreach ($propAttributes as $attribute) {
+                        unset($unchecked[$attribute]);
+
                         if (!(isset($titleFields[$attribute]))) {
                             continue;
                         }
                         $propValue = $row[$titleFields[$attribute]];
                         if (!empty($this->multipleValuesDelimiter)) {
-
                             if (strpos($propValue, $this->multipleValuesDelimiter) > 0) {
                                 $values = explode($this->multipleValuesDelimiter, $propValue);
                             } elseif (strpos($this->multipleValuesDelimiter, '/') === 0) {
@@ -66,8 +79,9 @@ abstract class AbstractImportCsv extends Import
                         }
                         $propData[$attribute] = $propValue;
                     }
+
                     $objectId = isset($titleFields['internal_id']) ? $row[$titleFields['internal_id']] : 0;
-                    $this->save($objectId, $objData, $importFields['object'], $propData, $importFields['property'], $row, $titleFields);
+                    $this->save($objectId, $objData, $importFields['object'], $propData, $importFields['property'], $row, $titleFields, $unchecked);
                 }
                 fclose($file);
             } catch (\Exception $e) {
@@ -77,7 +91,7 @@ abstract class AbstractImportCsv extends Import
             $transaction->commit();
         }
         if (file_exists($path)) {
-            unlink($path);
+//            unlink($path);
         }
         return true;
     }

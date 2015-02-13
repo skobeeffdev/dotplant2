@@ -2,10 +2,12 @@
 
 namespace app\data\components;
 
+use app\components\Helper;
 use app\models\Object;
 use app\models\ObjectPropertyGroup;
 use app\models\Property;
 use app\models\PropertyGroup;
+use app\models\PropertyHandler;
 use app\models\PropertyStaticValues;
 use devgroup\TagDependencyHelper\ActiveRecordHelper;
 use Yii;
@@ -97,7 +99,7 @@ abstract class Import extends Component
         parent::__construct($config);
     }
 
-    protected function save($objectId, $object, $objectFields = [], $properties = [], $propertiesFields = [], $row=[], $titleFields=[])
+    protected function save($objectId, $object, $objectFields = [], $properties = [], $propertiesFields = [], $row=[], $titleFields=[], $notCreatedFields = [])
     {
         try {
             $rowFields = array_combine(array_keys($titleFields), $row);
@@ -135,13 +137,11 @@ abstract class Import extends Component
             $objectData = $object;
         }
         if ($objectModel) {
-
             if ($objectModel instanceof ImportableInterface) {
                 $objectModel->processImportBeforeSave($rowFields, $this->multipleValuesDelimiter, $this->additionalFields);
             }
 
             if ($objectModel->save()) {
-
                 // add PropertyGroup to object
                 if (!is_array($this->addPropertyGroups)) {
                     $this->addPropertyGroups = [];
@@ -216,6 +216,7 @@ abstract class Import extends Component
                     }
                 }
 
+
                 if (!empty($propertiesData)) {
 
                     $objectModel->saveProperties(
@@ -223,6 +224,82 @@ abstract class Import extends Component
                             "Properties_{$objectModel->formName()}_{$objectModel->id}" => $propertiesData
                         ]
                     );
+                }
+
+                if (!empty($notCreatedFields)) {
+                    $object = Object::getForClass($objectModel->className());
+                    if (is_object($object)) {
+                        $pgName = 'New properties for ' . $object->name . ' created at';
+                        $pg = PropertyGroup::find()
+                            ->andWhere(['like', 'name', $pgName])
+                            ->andWhere(['object_id' => $object->id])
+                            ->one();
+
+                        if (null === $pg) {
+                            $pg = new PropertyGroup();
+                            $pg->attributes = [
+                                'object_id' => $object->id,
+                                'name' => $pgName . ' ' . date("Y-m-d H:i:s"),
+                                'hidden_group_title' => 1,
+                            ];
+
+                            $pg->save();
+                        }
+
+                        if ($pg->isNewRecord === false) {
+                            $ph = PropertyHandler::find()->where(['name' => 'Text'])->one();
+                            if (is_object($ph)) {
+                                foreach ($notCreatedFields as $key => $value) {
+                                    $notCreatedFields[$key] = iconv('Windows-1251', 'UTF-8', $value);
+
+                                    $newProp = Property::find()->where(['key' => $key])->one();
+                                    if(null === $newProp) {
+                                        $newProp = new Property();
+                                        $newProp->attributes = [
+                                            'property_group_id' => $pg->id,
+                                            'name' => $key,
+                                            'key' => $key,
+                                            'value_type' => 'STRING',
+                                            'property_handler_id' => $ph->id,
+                                            'has_static_values' => 0,
+                                            'has_slugs_in_values' => 0,
+                                            'is_eav' => 1,
+                                            'handler_additional_params' => '{}',
+                                        ];
+
+                                        $newProp->save(
+                                            true,
+                                            [
+                                                'property_group_id',
+                                                'name',
+                                                'key',
+                                                'value_type',
+                                                'property_handler_id',
+                                                'has_static_values',
+                                                'has_slugs_in_values',
+                                                'is_eav',
+                                                'handler_additional_params',
+                                            ]
+                                        );
+                                    }
+                                    unset($newProp);
+                                }
+
+                                $opg = new ObjectPropertyGroup();
+                                $opg->attributes = [
+                                    'object_id' => $object->id,
+                                    'object_model_id' => $objectModel->id,
+                                    'property_group_id' => $pg->id
+                                ];
+
+                                $opg->save();
+
+                                $objectModel->saveProperties([
+                                    'Properties_' . $objectModel->formName() . '_' . $objectModel->id => $notCreatedFields
+                                ]);
+                            }
+                        }
+                    }
                 }
 
                 if ($objectModel instanceof ImportableInterface) {
