@@ -7,7 +7,7 @@ use yii\db\ActiveQuery;
 
 class DummyFilterQuery implements FilterQueryInterface
 {
-    public function filter(ActiveQuery $query)
+    public function filter(ActiveQuery $query, &$cacheKeyAppend)
     {
         return $query;
     }

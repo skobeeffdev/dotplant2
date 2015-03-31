@@ -23,14 +23,19 @@ class Helper
      * @param bool $useCache
      * @return array
      */
-    public static function getModelMap($className, $keyAttribute, $valueAttribute, $useCache = true)
+    public static function getModelMap($className, $keyAttribute, $valueAttribute, $useCache = true, \app\components\filters\modelmap\AbstractFilter $filterQuery = null)
     {
+        if (!$filterQuery instanceof \app\components\filters\modelmap\AbstractFilter) {
+            $filterQuery = new \app\components\filters\modelmap\DummyFilter();
+        }
+
         /** @var ActiveRecord $className */
-        $cacheKey = 'Map: ' . $className::tableName() . ':' . $keyAttribute . ':' . $valueAttribute;
+        $cacheKey = 'Map: ' . $className::tableName() . ':' . $keyAttribute . ':' . $valueAttribute . ':' . $filterQuery->getCacheKeyPart();
         if (isset(Helper::$modelMaps[$cacheKey]) === false) {
             Helper::$modelMaps[$cacheKey] = $useCache ? Yii::$app->cache->get($cacheKey) : false;
             if (Helper::$modelMaps[$cacheKey] === false) {
-                Helper::$modelMaps[$cacheKey] = ArrayHelper::map($className::find()->asArray()->all(), $keyAttribute, $valueAttribute);
+                $query = $filterQuery->filter($className::find()->asArray());
+                Helper::$modelMaps[$cacheKey] = ArrayHelper::map($query->all(), $keyAttribute, $valueAttribute);
                 if ($useCache === true) {
                     Yii::$app->cache->set(
                         $cacheKey,
