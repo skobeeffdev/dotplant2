@@ -2,6 +2,10 @@
 
 namespace app\components;
 
+use app\components\events\AbstractEvent;
+use app\components\events\ControllerBeforeActionEvent;
+use app\components\events\ControllerPostRenderEvent;
+use app\components\events\ControllerPreRenderEvent;
 use Yii;
 use app\models\ViewObject;
 use yii\base\ViewEvent;
@@ -53,9 +57,7 @@ class Controller extends \yii\web\Controller
 
 
         foreach (Yii::$app->response->blocks as $block_name=>$value) {
-
             $this->view->blocks[$block_name] = $value;
-
         }
 
         if (!empty(Yii::$app->response->meta_description)) {
@@ -67,6 +69,8 @@ class Controller extends \yii\web\Controller
                 'meta_description'
             );
         }
+
+/*
         $preDecoratorEvent = new ViewEvent();
         $preDecoratorEvent->viewFile = $view;
         $preDecoratorEvent->params = $params;
@@ -89,6 +93,21 @@ class Controller extends \yii\web\Controller
         }
 
         throw new ServerErrorHttpException("Error rendering output");
+*/
 
+        $eventPreRender = new ControllerPreRenderEvent();
+            $eventPreRender->sender = $this;
+            $eventPreRender->setEventParam($params);
+        Yii::$app->trigger(AbstractEvent::EVENT_CONTROLLER_BEFORE_RENDER, $eventPreRender);
+
+        $result = parent::render($view, $eventPreRender->getEventParam());
+
+        $eventPostRender = new ControllerPostRenderEvent();
+            $eventPostRender->sender = $this;
+            $eventPostRender->setEventParam($result);
+        Yii::$app->trigger(AbstractEvent::EVENT_CONTROLLER_AFTER_RENDER, $eventPostRender);
+
+        return $eventPostRender->getEventParam();
     }
 }
+?>
