@@ -8,6 +8,7 @@ $config = [
     'extensions' => require(__DIR__ . '/../vendor/yiisoft/extensions.php'),
     'language' => 'ru',
     'bootstrap' => [
+        'app\components\CoreBootstrap',
         'seo',
         'backend',
         'app\components\UserPreferencesBootstrap',
@@ -68,6 +69,10 @@ $config = [
     'components' => [
         'cache' => [
             'class' => 'yii\caching\FileCache',
+        ],
+        'syscache' => [
+            'class' => 'yii\caching\FileCache',
+            'cachePath' => '@runtime/syscache',
         ],
         'request' => [
             'enableCsrfValidation' => true,
