@@ -8,7 +8,7 @@ use app\components\events\ControllerPostRenderEvent;
 use app\components\events\ControllerPreRenderEvent;
 use Yii;
 use app\models\ViewObject;
-use yii\base\ViewEvent;
+use app\modules\core\events\ViewEvent;
 use yii\web\ServerErrorHttpException;
 
 /**
@@ -73,9 +73,11 @@ class Controller extends \yii\web\Controller
 /*
         $preDecoratorEvent = new ViewEvent();
         $preDecoratorEvent->viewFile = $view;
-        $preDecoratorEvent->params = $params;
+        $preDecoratorEvent->params = &$params;
+        $preDecoratorEvent->blocks = &$this->view->blocks;
 
         $this->trigger(self::EVENT_PRE_DECORATOR, $preDecoratorEvent);
+
 
         if ($preDecoratorEvent->isValid === true) {
 
@@ -83,8 +85,9 @@ class Controller extends \yii\web\Controller
 
             $postDecoratorEvent = new ViewEvent();
             $postDecoratorEvent->viewFile = $view;
-            $postDecoratorEvent->params = $preDecoratorEvent->params;
-            $postDecoratorEvent->output = $content;
+            $postDecoratorEvent->params = &$preDecoratorEvent->params;
+            $postDecoratorEvent->output = &$content;
+            $postDecoratorEvent->blocks = &$this->view->blocks;
 
             $this->trigger(self::EVENT_POST_DECORATOR, $postDecoratorEvent);
             if ($postDecoratorEvent->isValid === true) {

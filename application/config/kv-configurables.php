@@ -8,7 +8,6 @@
  */
 
 return[
-    'loginSessionDuration' => 2592000,
-    'passwordResetTokenExpire' => 36011,
+    'kv-user' => [],
 ];
 
