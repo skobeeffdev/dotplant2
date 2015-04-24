@@ -12,7 +12,7 @@ $config = [
         'seo',
         'backend',
         'app\components\UserPreferencesBootstrap',
-
+        'plugin',
     ],
     'defaultRoute' => 'default',
     'modules' => [
@@ -66,6 +66,9 @@ $config = [
             'class' => '\kartik\grid\Module',
 
         ],
+        'plugin' => [
+            'class' => 'app\modules\plugin\PluginModule',
+        ]
     ],
     'components' => [
         'cache' => [
