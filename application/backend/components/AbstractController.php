@@ -8,7 +8,7 @@ use yii\filters\AccessControl;
 
 class AbstractController extends \yii\web\Controller
 {
-    protected $aclRules = ['allow' => true, 'roles' => ['product manage']];
+    protected $aclRules = ['allow' => true, 'roles' => ['administrate']];
     protected $mainModel = null;
 
     public function behaviors()

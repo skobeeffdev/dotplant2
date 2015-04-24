@@ -83,6 +83,8 @@ $config = [
             'class' => 'app\components\Response',
         ],
         'urlManager' => [
+            'class' => 'app\components\UrlManager',
+            'cache' => 'syscache',
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [

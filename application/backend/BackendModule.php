@@ -35,7 +35,8 @@ class BackendModule extends Module implements BootstrapInterface
             function () use ($app) {
                 if (
                     Yii::$app->requestedAction->controller->module instanceof BackendModule === false &&
-                    Yii::$app->requestedAction->controller instanceof BackendController === false
+                    Yii::$app->requestedAction->controller instanceof BackendController === false &&
+                    !isset($app->params['backendPath'])
                 ) {
                     if (Yii::$app->user->can('administrate')) {
                         /*
